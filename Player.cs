@@ -27,5 +27,23 @@ namespace BBallMarket
             team = _team;
         }
         public Player() { }
+
+        public void UpdateData(Player other)
+        {
+            this.name = other.name;
+            this.surname = other.surname;
+            this.position = other.position;
+            this.height = other.height;
+            this.weight = other.weight;
+            this.age = other.age;
+            this.city = other.city;
+            this.team = other.team;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("Name: {0} Surname: {1} Position: {2} Height: {3} Weight: {4} Age: {5} City: {6} Team: {7}",
+                name, surname, position, height, weight, age, city, team);
+        }
     }
 }

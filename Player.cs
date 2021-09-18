@@ -14,8 +14,8 @@ namespace BBallMarket
         public float weight { get; set; }
         public int age { get; set; }
         public string city { get; set; }
-        public string team { get; set; }
-        public Player(string _name, string _surname, string pos, float ht, float wt, int _age, string _city, string _team)
+        public string? team { get; set; }
+        public Player(string _name, string _surname, string pos, float ht, float wt, int _age, string _city, string? _team)
         {
             name = _name;
             surname = _surname;
@@ -26,5 +26,6 @@ namespace BBallMarket
             city = _city;
             team = _team;
         }
+        public Player() { }
     }
 }

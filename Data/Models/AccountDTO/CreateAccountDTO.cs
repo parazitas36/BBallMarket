@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BBallMarket
+namespace BBallMarket.Data.Model.AccountDTO
 {
-    public class Login
+    public class CreateAccountDTO
     {
+        [Required]
         public string username { get; set; }
+        [Required]
         public string password { get; set; }
-        public Login() { }
-        public Login(string _username, string psw)
-        {
-            username = _username;
-            password = psw;
-        }
+        public string email { get; set; }
     }
 }

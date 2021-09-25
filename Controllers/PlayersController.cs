@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using BBallMarket.Data.Entities;
-using BBallMarket.Data.Model.PlayersDTO;
+using BBallMarket.Data.Models.PlayersDTO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -64,14 +64,14 @@ namespace BBallMarket.Controllers
 
         // Create Player
         [HttpPost]
-        public async Task<IActionResult> CreatePlayer(Player newPlayer)
+        public async Task<IActionResult> CreatePlayer(PostPlayerDTO player)
         { 
-            return Ok(newPlayer);
+            return Ok(player);
         }
 
         // Update Player Data
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePlayerById(string id, [FromBody] Player newPlayer)
+        public async Task<IActionResult> UpdatePlayerById(string id, [FromBody] UpdatePlayerDTO player)
         {
             try
             {
@@ -83,9 +83,9 @@ namespace BBallMarket.Controllers
                 {
                     Player p = players[Math.Abs((Convert.ToInt32(id)))];
                     Console.WriteLine("Player data before update: " + p.ToString());
-                    p.UpdateData(newPlayer);
+                    p.UpdateData(_imapper.Map<Player>(player));
                     Console.WriteLine("Player data after update: " + p.ToString());
-                    return Ok(p);
+                    return Ok(_imapper.Map<GetPlayerDTO>(p));
                 }
                 else
                 {

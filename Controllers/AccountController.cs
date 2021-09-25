@@ -1,5 +1,5 @@
 ﻿using BBallMarket.Data.Entities;
-using BBallMarket.Data.Model.AccountDTO;
+using BBallMarket.Data.Models.AccountDTO;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace BBallMarket.Controllers
 
         // Registration
         [HttpPost]
-        public async Task<IActionResult> Registration([FromBody] CreateAccountDTO account)
+        public async Task<IActionResult> Registration([FromBody] PostAccountDTO account)
         {
             return Ok(account);
         }

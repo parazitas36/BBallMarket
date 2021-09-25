@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using BBallMarket.Data.Entities;
-using BBallMarket.Data.Model.AccountDTO;
+using BBallMarket.Data.Models.AccountDTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +12,7 @@ namespace BBallMarket.Profiles
     {
         public AccountProfile()
         {
-            CreateMap<Account, CreateAccountDTO>();
+            CreateMap<Account, PostAccountDTO>();
         }
     }
 }

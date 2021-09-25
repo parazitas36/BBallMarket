@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using BBallMarket.Data.Model.PlayersDTO;
+using BBallMarket.Data.Models.PlayersDTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +12,12 @@ namespace BBallMarket.Profiles
         public PlayersProfile()
         {
             CreateMap<Player, GetPlayerDTO>();
+            CreateMap<Player, PostPlayerDTO>();
+            CreateMap<Player, UpdatePlayerDTO>();
+
+            CreateMap<GetPlayerDTO, Player>();
+            CreateMap<PostPlayerDTO, Player>();
+            CreateMap<UpdatePlayerDTO, Player>();
         }
     }
 }

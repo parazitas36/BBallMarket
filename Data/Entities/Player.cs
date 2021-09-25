@@ -30,14 +30,14 @@ namespace BBallMarket
 
         public void UpdateData(Player other)
         {
-            this.name = other.name;
-            this.surname = other.surname;
-            this.position = other.position;
-            this.height = other.height;
-            this.weight = other.weight;
-            this.age = other.age;
-            this.city = other.city;
-            this.team = other.team;
+            this.name = other.name == null ? this.name : other.name;
+            this.surname = other.surname == null ? this.surname : other.surname;
+            this.position = other.position == null ? this.position : other.position;
+            this.height = other.height == 0 ? this.height : other.height;
+            this.weight = other.weight == 0 ? this.weight : other.weight;
+            this.age = other.age == 0 ? this.age : other.age;
+            this.city = other.city == null ? this.city : other.city;
+            this.team = other.team == null ? this.team : other.team;
         }
 
         public override string ToString()

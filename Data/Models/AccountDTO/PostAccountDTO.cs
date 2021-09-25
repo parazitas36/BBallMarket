@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace BBallMarket.Data.Model.AccountDTO
+namespace BBallMarket.Data.Models.AccountDTO
 {
-    public class CreateAccountDTO
+    public class PostAccountDTO
     {
         [Required]
         public string username { get; set; }

@@ -1,12 +1,11 @@
-﻿using AutoMapper;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace BBallMarket.Data.Models.PlayersDTO
 {
-    public class GetPlayerDTO 
+    public class UpdatePlayerDTO
     {
         public string name { get; set; }
         public string surname { get; set; }

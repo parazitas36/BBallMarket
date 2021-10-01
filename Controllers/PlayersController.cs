@@ -15,8 +15,8 @@ namespace BBallMarket.Controllers
     public class PlayersController : ControllerBase
     {
         Player[] players = new Player[2];
-        Player player = new Player("Adas", "Bananas", "SG", 185.5f, 62.3f, 22, "Kaunas", "BC Nedametimas");
-        Player newplayer = new Player("Aldonius", "Onylas", "SF", 199.5f, 62.3f, 22, "Vilnius", null);
+        Player player = new Player(1, "Adas", "Bananas", "SG", 185.5f, 62.3f, 22, "Kaunas", "BC Nedametimas");
+        Player newplayer = new Player(2, "Aldonius", "Onylas", "SF", 199.5f, 62.3f, 22, "Vilnius", null);
 
         private readonly ILogger<PlayersController> _logger;
         private readonly IMapper _imapper;

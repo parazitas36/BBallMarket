@@ -7,6 +7,7 @@ namespace BBallMarket
 {
     public class Player
     {
+        public int id { get; set; }
         public string name { get; set; }
         public string surname { get; set; }
         public string position { get; set; }
@@ -15,8 +16,9 @@ namespace BBallMarket
         public int age { get; set; }
         public string city { get; set; }
         public string? team { get; set; }
-        public Player(string _name, string _surname, string pos, float ht, float wt, int _age, string _city, string? _team)
+        public Player(int _id, string _name, string _surname, string pos, float ht, float wt, int _age, string _city, string? _team)
         {
+            id = _id;
             name = _name;
             surname = _surname;
             position = pos;

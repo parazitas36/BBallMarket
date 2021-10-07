@@ -100,7 +100,8 @@ namespace BBallMarket.Controllers
                 return BadRequest();
             }
             Player p = _imapper.Map<Player>(player);
-            return Ok(_imapper.Map<GetPlayerDTO>(p));
+            GetPlayerDTO dto = _imapper.Map<GetPlayerDTO>(p);
+            return Created(nameof(dto), dto);
         }
 
         // Delete Player by ID: api/famarket/city/players/playerid
@@ -145,12 +146,12 @@ namespace BBallMarket.Controllers
         }
 
         // POST Send invite to the player: api/famarket/city/players/playerid/invites/inviteid
-        [HttpPost("{city}/players/{playerid}/invites/{inviteid}")]
-        public async Task<IActionResult> Post(string city, string playerid, string inviteid, [FromBody] string team)
+        [HttpPost("{city}/players/{playerid}/invites")]
+        public async Task<IActionResult> Post(string city, string playerid, [FromBody] string team)
         {
+            int inviteid = (new Random()).Next(1, 10);
             if (city.ToCharArray().Where(x => !Char.IsLetter(x)).Count() > 0 ||
-                playerid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0 ||
-                inviteid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0)
+                playerid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0)
             {
                 return BadRequest();
             }
@@ -158,8 +159,9 @@ namespace BBallMarket.Controllers
             Player p = players.FirstOrDefault<Player>(x => x.id == Convert.ToInt32(playerid) && x.city.ToLower() == city.ToLower());
             if (p == null) { return NotFound(); }
 
-            Invite invitation = new Invite(Convert.ToInt32(inviteid), team, p, "Pending");
-            return Ok(_imapper.Map<GetInviteDTO>(invitation));
+            Invite invitation = new Invite(inviteid, team, p, "Pending");
+            GetInviteDTO dto = _imapper.Map<GetInviteDTO>(invitation);
+            return Created(nameof(dto), dto);
         }
 
         // PUT Update invite status: api/famarket/city/players/playerid/invites/inviteid

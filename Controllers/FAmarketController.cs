@@ -122,10 +122,29 @@ namespace BBallMarket.Controllers
         /*
             INVITES:
             GET
+            GET(id)
             Post
             Put
             Delete
         */
+
+        // GET Invite by ID api/famarket/city/players/playerid/invites/inviteid
+        [HttpGet("{city}/players/{playerid}/invites/{inviteid}")]
+        public async Task<IActionResult> Get(string playerid, string inviteid)
+        {
+            if (playerid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0 ||
+                inviteid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0) 
+            { 
+                return BadRequest(); 
+            
+            }
+            Player p = players.FirstOrDefault<Player>(x => x.id == Convert.ToInt32(playerid));
+            if (p == null) { return NotFound("Player with an id: " + Convert.ToInt32(playerid) + " does not exist." ); }
+            if(Convert.ToInt32(inviteid) > 0) { return NotFound("Invite with an id: " + Convert.ToInt32(inviteid) + " does not exist."); }
+
+            Invite invite = new Invite(1, "Komanda1", p, "Pending");
+            return Ok(_imapper.Map<GetInviteDTO>(invite));   
+        }
 
         // GET All invites api/famarket/city/players/playerid/invites
         [HttpGet("{city}/players/{playerid}/invites")]

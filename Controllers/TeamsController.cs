@@ -86,8 +86,11 @@ namespace BBallMarket.Controllers
 
         // DELETE api/<TeamController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(string id)
         {
+            if(id.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0) { return BadRequest(); }
+            if(Convert.ToInt32(id) > 1) { return NotFound(); }
+            return NoContent();
         }
     }
 }

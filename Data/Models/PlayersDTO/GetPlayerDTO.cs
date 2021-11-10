@@ -16,5 +16,6 @@ namespace BBallMarket.Data.Models.PlayersDTO
         public int age { get; set; }
         public string city { get; set; }
         public string? team { get; set; }
+        public string? famarket { get; set; }
     }
 }

@@ -16,7 +16,8 @@ namespace BBallMarket
         public int age { get; set; }
         public string city { get; set; }
         public string? team { get; set; }
-        public Player(int _id, string _name, string _surname, string pos, float ht, float wt, int _age, string _city, string? _team)
+        public string? famarket { get; set; }
+        public Player(int _id, string _name, string _surname, string pos, float ht, float wt, int _age, string _city, string? _team, string? _famarket)
         {
             id = _id;
             name = _name;
@@ -27,6 +28,7 @@ namespace BBallMarket
             age = _age;
             city = _city;
             team = _team;
+            famarket = _famarket;
         }
         public Player() { }
 
@@ -40,6 +42,7 @@ namespace BBallMarket
             this.age = other.age == 0 ? this.age : other.age;
             this.city = other.city == null ? this.city : other.city;
             this.team = other.team == null ? this.team : other.team;
+            this.famarket = other.famarket == null ? this.famarket : other.famarket;
         }
 
         public override string ToString()

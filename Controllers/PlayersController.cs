@@ -14,17 +14,13 @@ namespace BBallMarket.Controllers
     [Route("[controller]")]
     public class PlayersController : ControllerBase
     {
-        Player[] players = new Player[2];
-        Player player = new Player(1, "Adas", "Bananas", "SG", 185.5f, 62.3f, 22, "Kaunas", "BC Nedametimas");
-        Player newplayer = new Player(2, "Aldonius", "Onylas", "SF", 199.5f, 62.3f, 22, "Vilnius", null);
+
 
         private readonly ILogger<PlayersController> _logger;
         private readonly IMapper _imapper;
 
         public PlayersController(ILogger<PlayersController> logger, IMapper imapper)
         {
-            players[0] = player;
-            players[1] = newplayer;
             _logger = logger;
             _imapper = imapper;
         }
@@ -33,7 +29,7 @@ namespace BBallMarket.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPlayerList()
         {
-            return Ok(players.Select(p => _imapper.Map<GetPlayerDTO>(p)));
+            return Ok();
         }
 
         // Get Player by ID
@@ -48,8 +44,7 @@ namespace BBallMarket.Controllers
                 }
                 if (Math.Abs((Convert.ToInt32(id))) <= 1)
                 {
-                    Player p = players[Math.Abs((Convert.ToInt32(id)))];
-                    return Ok(_imapper.Map<GetPlayerDTO>(p));
+                    return Ok();
                 }
                 else
                 {
@@ -81,11 +76,7 @@ namespace BBallMarket.Controllers
                 }
                 if (Math.Abs((Convert.ToInt32(id))) <= 1)
                 {
-                    Player p = players[Math.Abs((Convert.ToInt32(id)))];
-                    Console.WriteLine("Player data before update: " + p.ToString());
-                    p.UpdateData(_imapper.Map<Player>(player));
-                    Console.WriteLine("Player data after update: " + p.ToString());
-                    return Ok(_imapper.Map<GetPlayerDTO>(p));
+                    return Ok();
                 }
                 else
                 {
@@ -110,9 +101,6 @@ namespace BBallMarket.Controllers
                 }
                 if (Math.Abs((Convert.ToInt32(id))) <= 1)
                 {
-                    Player p = players[Math.Abs((Convert.ToInt32(id)))];
-                    players[Convert.ToInt32(id)] = null;
-                    Console.WriteLine("Deleted: " + p.ToString());
                     return NoContent();
                 }
                 else

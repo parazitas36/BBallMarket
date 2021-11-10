@@ -23,5 +23,6 @@ namespace BBallMarket.Data.Models.PlayersDTO
         [Required]
         public string city { get; set; }
         public string? team { get; set; }
+        public string? famarket { get; set; }
     }
 }

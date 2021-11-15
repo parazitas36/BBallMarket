@@ -7,14 +7,14 @@ namespace BBallMarket
 {
     public class Player
     {
-        public int id { get; set; }
-        public string name { get; set; }
-        public string surname { get; set; }
-        public string position { get; set; }
-        public float height { get; set; }
-        public float weight { get; set; }
-        public int age { get; set; }
-        public string city { get; set; }
+        public int? id { get; set; }
+        public string? name { get; set; }
+        public string? surname { get; set; }
+        public string? position { get; set; }
+        public float? height { get; set; }
+        public float? weight { get; set; }
+        public int? age { get; set; }
+        public string? city { get; set; }
         public string? team { get; set; }
         public string? famarket { get; set; }
         public Player(int _id, string _name, string _surname, string pos, float ht, float wt, int _age, string _city, string? _team, string? _famarket)

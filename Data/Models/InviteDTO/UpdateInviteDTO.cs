@@ -7,6 +7,6 @@ namespace BBallMarket.Data.Models.InviteDTO
 {
     public class UpdateInviteDTO
     {
-        public int inviteStatus { get; set; }
+        public string inviteStatus { get; set; }
     }
 }

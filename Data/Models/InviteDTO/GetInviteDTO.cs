@@ -11,6 +11,6 @@ namespace BBallMarket.Data.Models.InviteDTO
         public int inviteID { get; set; }
         public string team { get; set; }
         public int inviteStatusID { get; set; }
-        public int playerID { get; set; }
+        public GetPlayerDTO player { get; set; }
     }
 }

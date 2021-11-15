@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
+using BBallMarket.Authentication;
 using BBallMarket.Data.Entities;
 using BBallMarket.Data.Models.FADTO;
 using BBallMarket.Data.Models.InviteDTO;
 using BBallMarket.Data.Models.PlayersDTO;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -12,11 +14,13 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 
 namespace BBallMarket.Controllers
 {
+    [Authorize(Roles =UserRoles.User + "," + UserRoles.Admin)]
     [Route("api/[controller]")]
     [ApiController]
     public class FAmarketController : ControllerBase
@@ -78,6 +82,7 @@ namespace BBallMarket.Controllers
             return Ok(dto);
         }
 
+        [Authorize(Roles=UserRoles.Admin)]
         [HttpPost]
         public async Task<IActionResult> PostCity([FromBody] PostFADTO fa)
         {
@@ -102,8 +107,10 @@ namespace BBallMarket.Controllers
             GetFADTO dto = _imapper.Map<GetFADTO>(fm);
             return Created(nameof(dto), dto);
         }
-        [HttpPut("{city}")]
-        public async Task<IActionResult> PutCity(string city, [FromBody] GetFADTO fa)
+
+        [Authorize(Roles = UserRoles.Admin)]
+        [HttpPatch("{city}")]
+        public async Task<IActionResult> PatchCity(string city, [FromBody] GetFADTO fa)
         {
             if (city.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0) { return BadRequest(); }
             // Patikrinti ar redaguojamas miestas egzistuoja
@@ -138,20 +145,31 @@ namespace BBallMarket.Controllers
             }
         }
 
+        [Authorize(Roles = UserRoles.Admin)]
         [HttpDelete("{city}")]
         public async Task<IActionResult> DeleteCity(string city)
         {
             if (city.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0) { return BadRequest(); }
+
             // Patikrinti ar redaguojamas miestas egzistuoja
             SqlConnection conn = ConnectToDB();
-            string query = "SELECT * FROM FAmarket WHERE id=@city";
+            string query = "SELECT id FROM FAmarket WHERE id=@city";
             SqlCommand cmd = new SqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@city", Convert.ToInt32(city));
             SqlDataReader reader = cmd.ExecuteReader();
             reader.Read();
             if (!reader.HasRows) { conn.Close(); return NotFound(); }
+            reader.Read();
+            int cityid = (int)reader[0];
             reader.Close();
 
+            // Pakeisti zaideju duomenis, kurie registruoti sitam mieste
+            query = "UPDATE Players SET fk_famarket=NULL WHERE fk_famarket = @cityid";
+            cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@cityid", cityid);
+            cmd.ExecuteNonQuery();
+
+            // Istrinti miesta
             query = "DELETE FROM FAmarket WHERE id=@city";
             cmd = new SqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@city", Convert.ToInt32(city));
@@ -176,32 +194,6 @@ namespace BBallMarket.Controllers
 
             IList<Player> list = new List<Player>();
             SqlConnection conn = ConnectToDB();
-            //if (Convert.ToInt32(city) == 1)
-            //{
-            //    string query = "SELECT DISTINCT Players.id, Players.name, Players.surname, Players.height, Players.weight, Players.age, Players.position, Players.city, FAmarket.city as FAmarket , CASE WHEN Players.fk_team IS NULL THEN NULL ELSE Team.teamName END AS Team " +
-            //                    " FROM Players, FAmarket, Team " +
-            //                    " WHERE (FAmarket.id = Players.fk_famarket) AND (Team.id = Players.fk_team OR Players.fk_team IS NULL) ";
-            //    SqlCommand cmd = new SqlCommand(query, conn);
-            //    SqlDataReader reader = cmd.ExecuteReader();
-            //    while (reader.Read())
-            //    {
-            //        IDataRecord dataRecord = (IDataRecord)reader;
-            //        int id = (int)dataRecord[0];
-            //        string name = (string)dataRecord[1];
-            //        string surname = (string)dataRecord[2];
-            //        int height = (int)dataRecord[3];
-            //        int weight = (int)dataRecord[4];
-            //        int age = (int)dataRecord[5];
-            //        string pos = (string)dataRecord[6];
-            //        string player_city = (string)dataRecord[7];
-            //        string famarket = dataRecord[8].ToString() == "" ? null : (string)dataRecord[8];
-            //        string team = dataRecord[9].ToString() == "" ? null : (string)dataRecord[9]; ;
-            //        Player player = new Player(id, name, surname, pos, height, weight, age, player_city, team, famarket);
-            //        list.Add(player);
-            //    }
-            //}
-            //else
-            //{
             string query = "SELECT DISTINCT Players.id, Players.name, Players.surname, Players.height, Players.weight, Players.age, Players.position, Players.city, FAmarket.city as FAmarket , CASE WHEN Players.fk_team IS NULL THEN NULL ELSE Team.teamName END AS Team " +
                             " FROM Players, FAmarket, Team " +
                             " WHERE FAmarket.id = Players.fk_famarket AND (Team.id = Players.fk_team OR Players.fk_team IS NULL) AND FAmarket.id=@city ";
@@ -224,7 +216,6 @@ namespace BBallMarket.Controllers
                 Player player = new Player(id, name, surname, pos, height, weight, age, player_city, team, famarket);
                 list.Add(player);
             }
-            //}
             if (list.Count == 0) { return NotFound(); }
             IList<GetPlayerDTO> dtoList = list.Select(x => _imapper.Map<GetPlayerDTO>(x)).ToList();
             return Ok(dtoList);
@@ -271,6 +262,7 @@ namespace BBallMarket.Controllers
         }
 
         // POST Add player to the market api/famarket/city/players/
+        [Authorize(Roles =UserRoles.User)]
         [HttpPost("{city}/players")]
         public async Task<IActionResult> PostPlayer(string city, [FromBody] PostPlayerDTO player)
         {
@@ -278,13 +270,37 @@ namespace BBallMarket.Controllers
             {
                 return BadRequest();
             }
+
+            // Paima user id is tokeno
+            string? uid = null;
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                IEnumerable<Claim> claims = identity.Claims;
+                uid = (string)identity.FindFirst("uid").Value;
+                Console.WriteLine(uid);
+            }
+
+            SqlConnection conn = ConnectToDB();
+            // Patikrinti ar nera zaidejo registruoto su sia paskyra
+            string checkQuery = "SELECT * FROM Players WHERE fk_account = @accid";
+            SqlCommand checkCMD = new SqlCommand(checkQuery, conn);
+            checkCMD.Parameters.AddWithValue("@accid", uid);
+            SqlDataReader reader = checkCMD.ExecuteReader();
+            if (reader.HasRows) 
+            { 
+                return Conflict(
+                    new Response() { Status = "409", Message = "There is a player already associated with this account!"}
+                    );
+            }
+            reader.Close();
+
             Player p = _imapper.Map<Player>(player);
             // Iterpti zaideja i db
             string query = @"
-            INSERT INTO Players (name, surname, height, weight, age, position, city, fk_famarket) 
-            VALUES(@name, @surname, @height, @weight, @age, @position, @city, @famarket)
+            INSERT INTO Players (name, surname, height, weight, age, position, city, fk_famarket, fk_account) 
+            VALUES(@name, @surname, @height, @weight, @age, @position, @city, @famarket, @accid)
             ";
-            SqlConnection conn = ConnectToDB();
             SqlCommand cmd = new SqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@name", p.name);
             cmd.Parameters.AddWithValue("@surname", p.surname);
@@ -294,12 +310,69 @@ namespace BBallMarket.Controllers
             cmd.Parameters.AddWithValue("@position", p.position);
             cmd.Parameters.AddWithValue("@city", p.city);
             cmd.Parameters.AddWithValue("@famarket", Convert.ToInt32(city));
+            cmd.Parameters.AddWithValue("@accid", uid);
             cmd.ExecuteNonQuery();
             conn.Close();
 
             GetPlayerDTO dto = _imapper.Map<GetPlayerDTO>(p);
             return Created(nameof(dto), dto);
         }
+
+        // Update Player by ID: api/famarket/city/players/playerid
+        [HttpPatch("{city}/players/{playerid}")]
+        public async Task<IActionResult> UpdatePlayerByID(string city, string playerid, [FromBody] UpdatePlayerDTO player)
+        {
+            if (city.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0 ||
+               playerid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0)
+            {
+                return BadRequest();
+            }
+
+            string? uid = null;
+            // Paima user id is tokeno
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                IEnumerable<Claim> claims = identity.Claims;
+                uid = (string)identity.FindFirst("uid").Value;
+                Console.WriteLine(uid);
+            }
+
+            // Patikrinti ar egzistuoja
+            string query = @"
+            SELECT Players.id, Players.fk_famarket, FAmarket.id, FAmarket.city 
+            FROM Players, FAmarket 
+            WHERE Players.id = @pid AND FAmarket.id = Players.fk_famarket AND FAmarket.id = @city AND fk_account = @accid
+            ";
+            SqlConnection conn = ConnectToDB();
+            SqlCommand cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@pid", playerid);
+            cmd.Parameters.AddWithValue("@city", Convert.ToInt32(city));
+            cmd.Parameters.AddWithValue("@accid", uid);
+            SqlDataReader reader = cmd.ExecuteReader();
+            if (!reader.HasRows) { return NotFound(); }
+            reader.Close();
+
+            // Atnaujinti
+            query = @"
+            UPDATE Players
+            SET
+            fk_team = @team,
+            fk_famarket = NULL
+            WHERE id = @playerid AND 
+            fk_famarket = @city AND
+            fk_account = @accid
+            ";
+            cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@playerid", Convert.ToInt32(playerid));
+            cmd.Parameters.AddWithValue("@team", Convert.ToInt32(player.team));
+            cmd.Parameters.AddWithValue("@city", Convert.ToInt32(city));
+            cmd.Parameters.AddWithValue("@accid", uid);
+            cmd.ExecuteNonQuery();
+            conn.Close();
+            return NoContent();
+        }
+
 
         // Delete Player by ID: api/famarket/city/players/playerid
         [HttpDelete("{city}/players/{playerid}")]
@@ -311,6 +384,20 @@ namespace BBallMarket.Controllers
                 return BadRequest();
             }
 
+            string? role = null;
+            string? uid = null;
+            // Paima user id ir role is tokeno
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                IEnumerable<Claim> claims = identity.Claims;
+                uid = (string)identity.FindFirst("uid").Value;
+                role = (string)identity.FindFirst(ClaimTypes.Role).Value;
+                Console.WriteLine(uid);
+                Console.WriteLine(role);
+            }
+
+            // Patikrinti ar egzistuoja
             string query = @"
             SELECT Players.id, Players.fk_famarket, FAmarket.id, FAmarket.city 
             FROM Players, FAmarket 
@@ -323,6 +410,24 @@ namespace BBallMarket.Controllers
             SqlDataReader reader = cmd.ExecuteReader();
             if (!reader.HasRows) { return NotFound(); }
             reader.Close();
+            reader = null;
+            
+            // Ar sis vartotojas sukure si zaideja
+            if(role != UserRoles.Admin)
+            {
+                string q = @"
+                SELECT * FROM Players WHERE fk_account = @accid AND id = @playerid AND fk_famarket = @cityid
+                ";
+                SqlCommand checkCmd = new SqlCommand(q, conn);
+                checkCmd.Parameters.AddWithValue("@accid", uid);
+                checkCmd.Parameters.AddWithValue("@playerid", Convert.ToInt32(playerid));
+                checkCmd.Parameters.AddWithValue("@cityid", Convert.ToInt32(city));
+                SqlDataReader read = cmd.ExecuteReader();
+                if(!read.HasRows) { return Forbid(); }
+                read.Close();
+            }
+
+            // Panaikinti
             query = @"
             DELETE FROM Players
             WHERE Players.id = @playerid AND 
@@ -460,11 +565,21 @@ namespace BBallMarket.Controllers
 
         // POST Send invite to the player: api/famarket/city/players/playerid/invites/inviteid
         [HttpPost("{city}/players/{playerid}/invites")]
-        public async Task<IActionResult> Post(string city, string playerid, [FromBody] PostInviteDTO postInvite)
+        public async Task<IActionResult> Post(string city, string playerid)
         {
             if (city.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0 ||
                 playerid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0)
             { return BadRequest(); }
+
+            string? uid = null;
+            // Paima user id is tokeno
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                IEnumerable<Claim> claims = identity.Claims;
+                uid = (string)identity.FindFirst("uid").Value;
+                Console.WriteLine(uid);
+            }
 
             SqlConnection conn = ConnectToDB();
 
@@ -481,26 +596,73 @@ namespace BBallMarket.Controllers
             if(!reader.HasRows) { return NotFound(); }
             reader.Close();
 
+            // Patikrinti ar prisijunges vartotojas turi komanda (gali pakviesti zaideja)
+            string checkQuery = @"
+            SELECT t.id
+            FROM Players p, AspNetUsers acc, Team t
+            WHERE acc.Id = p.fk_account AND p.id = t.fk_owner AND acc.Id = @accid
+            ";
+            cmd = new SqlCommand(checkQuery, conn);
+            cmd.Parameters.AddWithValue("@accid", uid);
+            reader = cmd.ExecuteReader();
+            if(!reader.HasRows) { return NotFound(new Response() { Status = "404", Message = "You cannot invite other players until you own a team!" }); }
+            reader.Read();
+            IDataRecord dataRecords = (IDataRecord)reader;
+            int teamID = (int)dataRecords[0];
+            reader.Close();
+            reader = null;
+
+            // Patikrinti ar prisijunges vartotojas jau kviete si zaideja
+            checkQuery = @"
+            SELECT *
+            FROM Invite
+            WHERE Invite.fk_player = @playerid AND Invite.fk_team = @team
+            ";
+            cmd = new SqlCommand(checkQuery, conn);
+            cmd.Parameters.AddWithValue("@playerid", Convert.ToInt32(playerid));
+            cmd.Parameters.AddWithValue("@team", teamID);
+            reader = cmd.ExecuteReader();
+            if(reader.HasRows) { return Conflict(new Response() { Status = "409", Message = "This player is already invited to your team!"}); }
+            reader.Close();
+            reader = null;
+
             // Irasyti pakvietima i DB
-            string teamName = postInvite.teamName;
             string query = @"
             INSERT INTO Invite (fk_team, fk_player)
-            VALUES ((SELECT id FROM Team WHERE teamName = @team), @playerid)
+            VALUES (@team, @playerid)
             ";
             cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@team", teamName);
+            cmd.Parameters.AddWithValue("@team", teamID);
             cmd.Parameters.AddWithValue("@playerid", Convert.ToInt32(playerid));
             cmd.ExecuteNonQuery();
-            GetInviteDTO getDTO = new GetInviteDTO();
-            getDTO.inviteStatusID = 1;
-            getDTO.playerID = Convert.ToInt32(playerid);
-            getDTO.team = teamName;
-            return Ok(getDTO);
+
+            // Paimti sukurta objekta
+            query = @"
+            SELECT p.id, t.teamName, inv.id
+            FROM Players p, Team t, Invite inv
+            WHERE p.id = @playerid AND t.id = @team
+            ";
+            cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@playerid", Convert.ToInt32(playerid));
+            cmd.Parameters.AddWithValue("@team", teamID);
+            reader = cmd.ExecuteReader();
+            reader.Read();
+            dataRecords = null;
+            dataRecords = (IDataRecord)reader;
+
+            PostInviteDTO invite = new PostInviteDTO()
+            {
+                inviteID = (int)dataRecords[2],
+                playerID = (int)dataRecords[0],
+                teamName = (string)dataRecords[1]
+            };
+
+            return Created(nameof(PostInviteDTO), invite);
         }
 
-        // PUT Update invite status: api/famarket/city/players/playerid/invites/inviteid
-        [HttpPut("{city}/players/{playerid}/invites/{inviteid}/")]
-        public async Task<IActionResult> Put(string city, string playerid, string inviteid, [FromBody] UpdateInviteDTO inviteStatus)
+        // PATCH Update invite status: api/famarket/city/players/playerid/invites/inviteid
+        [HttpPatch("{city}/players/{playerid}/invites/{inviteid}/")]
+        public async Task<IActionResult> Patch(string city, string playerid, string inviteid, [FromBody] UpdateInviteDTO inviteStatus)
         {
             if (city.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0 ||
                playerid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0 ||
@@ -509,12 +671,22 @@ namespace BBallMarket.Controllers
                 return BadRequest();
             }
 
+            string? uid = null;
+            // Paima user id is tokeno
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                IEnumerable<Claim> claims = identity.Claims;
+                uid = (string)identity.FindFirst("uid").Value;
+                Console.WriteLine(uid);
+            }
+
             SqlConnection conn = ConnectToDB();
             // Patikrinti ar toks egzsituoja
             string existQuery = @"
             SELECT p.id, i.id, fa.id
             FROM Players p, Invite i, FAmarket fa
-            WHERE p.id = @playerid AND i.id = @inviteid AND fa.id = @cityid
+            WHERE p.id = @playerid AND i.id = @inviteid AND fa.id = @cityid AND i.fk_player = p.id
             ";
             SqlCommand cmd = new SqlCommand(existQuery, conn);
             cmd.Parameters.AddWithValue("@playerid", Convert.ToInt32(playerid));
@@ -524,14 +696,29 @@ namespace BBallMarket.Controllers
             if (!reader.HasRows) { return NotFound(); }
             reader.Close();
 
+            // Patikrinti ar tai prisijungusio vartotojo kvietimas
+            string checkQuery = @"
+            SELECT p.fk_account, acc.Id, inv.id
+            FROM Players p, AspNetUsers acc, Invite inv
+            WHERE p.id = @playerid AND p.fk_account = acc.Id AND acc.Id = @accid AND p.fk_famarket = @city AND inv.fk_player = p.id AND inv.id = @inviteid
+            ";
+            SqlCommand command = new SqlCommand(checkQuery, conn);
+            command.Parameters.AddWithValue("@playerid", Convert.ToInt32(playerid));
+            command.Parameters.AddWithValue("@accid", uid);
+            command.Parameters.AddWithValue("@city", Convert.ToInt32(city));
+            command.Parameters.AddWithValue("@inviteid", Convert.ToInt32(inviteid));
+            SqlDataReader read = command.ExecuteReader();
+            if(!read.HasRows) { return Forbid(); }
+            read.Close();
+
             // Atnaujinti pakvietimo busena
             string query = @"
-            UPDATE Invite SET fk_inviteStatus=@invStatus
+            UPDATE Invite SET fk_inviteStatus=(SELECT id FROM inviteStatus WHERE status = @invStatus)
             WHERE id = @inviteid
             ";
             cmd = new SqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@inviteid", Convert.ToInt32(inviteid));
-            cmd.Parameters.AddWithValue("@invStatus", Convert.ToInt32(inviteStatus.inviteStatus));
+            cmd.Parameters.AddWithValue("@invStatus", inviteStatus.inviteStatus);
             cmd.ExecuteNonQuery();
             return Ok();
         }
@@ -544,6 +731,16 @@ namespace BBallMarket.Controllers
                playerid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0 ||
                inviteid.ToCharArray().Where(x => !Char.IsDigit(x)).Count() > 0)
             { return BadRequest(); }
+
+            string? uid = null;
+            // Paima user id is tokeno
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity != null)
+            {
+                IEnumerable<Claim> claims = identity.Claims;
+                uid = (string)identity.FindFirst("uid").Value;
+                Console.WriteLine(uid);
+            }
 
             SqlConnection conn = ConnectToDB();
             string query = @"
@@ -564,13 +761,14 @@ namespace BBallMarket.Controllers
             if (!reader.HasRows) { return NotFound(); }
             reader.Close();
             query = @"
-            DELETE FROM Invite WHERE Invite.id=@inviteID
+            DELETE FROM Invite WHERE Invite.id=@inviteID AND (SELECT Players.fk_account FROM Players WHERE Players.id = @playerid) = @accid 
             ";
             cmd = new SqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@playerid", Convert.ToInt32(playerid));
             cmd.Parameters.AddWithValue("@city", Convert.ToInt32(city));
             cmd.Parameters.AddWithValue("@inviteID", Convert.ToInt32(inviteid));
-            cmd.ExecuteNonQuery();
+            cmd.Parameters.AddWithValue("@accid", uid);
+            if(cmd.ExecuteNonQuery() == 0) { return Forbid(); }
             return NoContent();
         }
     }

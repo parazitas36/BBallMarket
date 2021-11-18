@@ -742,6 +742,7 @@ namespace BBallMarket.Controllers
                 Console.WriteLine(uid);
             }
 
+            // Patikrinti ar yra toks pakvietimas
             SqlConnection conn = ConnectToDB();
             string query = @"
             SELECT Invite.id as inviteID,  Team.teamName, p.id, p.name, p.surname, p.height,
@@ -760,6 +761,8 @@ namespace BBallMarket.Controllers
             SqlDataReader reader = cmd.ExecuteReader();
             if (!reader.HasRows) { return NotFound(); }
             reader.Close();
+
+            // Istrinti
             query = @"
             DELETE FROM Invite WHERE Invite.id=@inviteID AND (SELECT Players.fk_account FROM Players WHERE Players.id = @playerid) = @accid 
             ";

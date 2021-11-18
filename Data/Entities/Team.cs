@@ -8,23 +8,16 @@ namespace BBallMarket.Data.Entities
     public class Team
     {
         public int TeamID { get; set; }
-        public string Owner { get; set; }
+        public int OwnerID { get; set; }
         public string TeamName { get; set; }
-        public IList<Player> Players { get; set; }
+        public IList<Player>? Players { get; set; }
         public Team() { }
-        public Team(string owner, string teamName, IList<Player> players)
+        public Team(int id, int owner, string teamName, IList<Player>? players)
         {
-            TeamID = 1;
-            Owner = owner;
+            TeamID = id;
+            OwnerID = owner;
             TeamName = teamName;
             Players = players;
-        }
-
-        public void updateTeam(string? owner, string? teamName, Player player)
-        {
-            Owner = owner == null ? Owner : owner;
-            TeamName = teamName == null ? TeamName : teamName;
-            if(player != null) { Players.Add(player); }
         }
     }
 }

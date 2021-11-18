@@ -8,8 +8,8 @@ namespace BBallMarket.Data.Models.TeamDTO
 {
     public class GetTeamDTO
     {
-        public string Owner { get; set; }
+        public int OwnerID { get; set; }
         public string TeamName { get; set; }
-        public IList<GetPlayerDTO> Players { get; set; }
+        public IList<GetPlayerDTO>? Players { get; set; }
     }
 }

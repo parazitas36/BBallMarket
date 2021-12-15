@@ -7,6 +7,6 @@ namespace BBallMarket.Data.Models.TeamDTO
 {
     public class PostTeamDTO
     {
-        public string TeamName { get; set; }
+        public string teamName { get; set; }
     }
 }

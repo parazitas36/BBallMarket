@@ -50,6 +50,7 @@ namespace BBallMarket.Controllers
 
                 foreach(var userRole in userRoles)
                 {
+                    authClaims.Add(new Claim("Role", userRole));
                     authClaims.Add(new Claim(ClaimTypes.Role, userRole));
                 }
 
@@ -62,7 +63,7 @@ namespace BBallMarket.Controllers
                     claims: authClaims,
                     signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
                     );
-
+                Response.Cookies.Append("jwt", new JwtSecurityTokenHandler().WriteToken(token), new CookieOptions { HttpOnly = false, IsEssential = true, Secure = true, SameSite = SameSiteMode.None, Expires = DateTime.Now.AddHours(1)});
                 return Ok(new
                 {
                     token = new JwtSecurityTokenHandler().WriteToken(token),
@@ -137,6 +138,5 @@ namespace BBallMarket.Controllers
             }
             return Ok(new Response { Status = "Success", Message = "Admin created successfully!" });
         }
-
     }
 }

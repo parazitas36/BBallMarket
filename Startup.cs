@@ -34,10 +34,11 @@ namespace BBallMarket
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddCors();
 
             // For Entity Framework
             services.AddDbContext<ApplicationDbContext>(
-                options => options.UseSqlServer(Configuration.GetConnectionString("Default")));
+                options => options.UseSqlServer(Configuration.GetConnectionString("Local")));
 
             // For Identity
             services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -80,6 +81,13 @@ namespace BBallMarket
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors(options => options
+            .WithOrigins(new[] { "http://localhost:3000"})
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            );
 
             app.UseAuthentication();
 

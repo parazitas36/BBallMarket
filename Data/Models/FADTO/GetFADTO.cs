@@ -8,5 +8,6 @@ namespace BBallMarket.Data.Models.FADTO
     public class GetFADTO
     {
         public string city { get; set; }
+        public int id { get; set; }
     }
 }

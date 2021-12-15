@@ -35,7 +35,7 @@ namespace BBallMarket.Controllers
 
         private SqlConnection ConnectToDB()
         {
-            SqlConnection conn = new SqlConnection(_config.GetConnectionString("Default"));
+            SqlConnection conn = new SqlConnection(_config.GetConnectionString("Local"));
             conn.Open();
             return conn;
         }
@@ -61,7 +61,7 @@ namespace BBallMarket.Controllers
                 Team team = new Team()
                 {
                     TeamID = (int)dataRecords[0],
-                    TeamName = (string)dataRecords[1],
+                    teamName = (string)dataRecords[1],
                     OwnerID = (int)dataRecords[2],
                     Players = new List<Player>()
                 };
@@ -130,7 +130,7 @@ namespace BBallMarket.Controllers
                 team = new Team()
                 {
                     TeamID = (int)dataRecords[0],
-                    TeamName = (string)dataRecords[1],
+                    teamName = (string)dataRecords[1],
                     OwnerID = (int)dataRecords[2],
                     Players = new List<Player>()
                 };
@@ -168,51 +168,28 @@ namespace BBallMarket.Controllers
 
         // POST api/<TeamController>
         [Authorize(Roles =UserRoles.User)]
-        [HttpPost]
-        public async Task<IActionResult> Post([FromBody]PostTeamDTO team)
+        [HttpPost("{pid}")]
+        public async Task<IActionResult> Post(int pid, [FromBody] PostTeamDTO team)
         {
-            string? uid = null;
-            // Paima user id is tokeno
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-            if (identity != null)
-            {
-                IEnumerable<Claim> claims = identity.Claims;
-                uid = (string)identity.FindFirst("uid").Value;
-                Console.WriteLine(uid);
-            }
-
+            Console.WriteLine(team.teamName);
             // Patikrinti ar naudotojas jau neturi komandos
             SqlConnection conn = ConnectToDB();
-            string query = @"
-            SELECT p.id
-            FROM Players p, Team t
-            WHERE p.fk_account = @accid AND t.fk_owner = p.id
-            ";
-            SqlCommand cmd = new SqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@accid", uid);
-            SqlDataReader reader = cmd.ExecuteReader();
-            if(reader.HasRows) { return Conflict(new Response() { Status="409", Message = "You cannot own more than one team."}); }
-            reader.Close();
-            reader = null;
 
             // Sukurti komanda
-            query = @"
+            string query = @"
             INSERT INTO Team (fk_owner, teamName) 
-            OUTPUT INSERTED.fk_owner
-            VALUES((SELECT p.id FROM Players p WHERE p.fk_account = @accid), @tName)
+            VALUES(@pid, @tName)
             ";
+            SqlCommand cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@pid", pid);
+            cmd.Parameters.AddWithValue("@tName", team.teamName);
+            cmd.ExecuteNonQuery();
+            query = @"UPDATE Players SET fk_team = (SELECT t.id FROM Team t WHERE t.teamName=@teamName), fk_famarket = NULL WHERE id = @pid";
             cmd = new SqlCommand(query, conn);
-            Team t = _imapper.Map<Team>(team);
-            t.Players = null;
-            cmd.Parameters.AddWithValue("@accid", uid);
-            cmd.Parameters.AddWithValue("@tName", t.TeamName);
-            reader = cmd.ExecuteReader();
-            reader.Read();
-            t.OwnerID = (int)reader[0];
-
-            GetTeamDTO teamDTO = _imapper.Map<GetTeamDTO>(t);
-
-            return Created(nameof(teamDTO), teamDTO);
+            cmd.Parameters.AddWithValue("@pid", pid);
+            cmd.Parameters.AddWithValue("@teamName", team.teamName);
+            cmd.ExecuteNonQuery();
+            return Created(nameof(PostTeamDTO), team);
         }
 
         // DELETE api/<TeamController>/5
